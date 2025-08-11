@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Countdown Timer - Teams Tab</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+    :root {
+      --bg-dark: #0b1220;
+      --bg-gradient: linear-gradient(135deg, #0b1220 0%, #00172f 100%);
+      --card-bg: rgba(255, 255, 255, 0.05);
+      --accent: #2993e0;
+      --text-light: #e6eef6;
+      --text-muted: rgba(230, 238, 246, 0.6);
+      --clock-icon-color: #2993e0;
+      --border-color: #2993e0;
+      --border-thickness: 3px;
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg-gradient);
+      color: var(--text-light);
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .container {
+      text-align: center;
+      max-width: 480px;
+      width: 95vw;
+    }
+    .clock-row {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .clock {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 110px;
+      box-shadow: 0 0 12px rgba(41, 147, 224, 0.6);
+      border: var(--border-thickness) solid var(--border-color);
+      user-select: none;
+    }
+    .clock svg {
+      width: 28px;
+      height: 28px;
+      fill: var(--clock-icon-color);
+      flex-shrink: 0;
+    }
+    .clock-label {
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+    .clock-time {
+      font-family: 'Courier New', monospace;
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      min-width: 52px;
+      text-align: right;
+      color: var(--text-light);
+      user-select: text;
+    }
+    .card {
+      background: var(--card-bg);
+      padding: 32px 40px;
+      border-radius: 14px;
+      box-shadow: 0 8px 30px rgba(0, 23, 47, 0.7);
+      user-select: none;
+    }
+    h1 {
+      margin: 0 0 12px 0;
+      font-weight: 700;
+      font-size: 1.5rem;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+    }
+    #target {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+      user-select: text;
+    }
+    #timer {
+      font-size: 3rem;
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      font-family: 'Courier New', monospace;
+      color: var(--text-light);
+      user-select: text;
+    }
+    .small {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 12px;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="clock-row">
+      <div class="clock">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="10" stroke="none" fill="currentColor" opacity="0.2"/>
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+          <line x1="12" y1="12" x2="12" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="12" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <div class="clock-label">Hinkley Point C</div>
+        <div class="clock-time" id="clock-hpc">--:--</div>
+      </div>
+      <div class="clock">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="10" stroke="none" fill="currentColor" opacity="0.2"/>
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+          <line x1="12" y1="12" x2="12" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="12" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <div class="clock-label">Sizewell C</div>
+        <div class="clock-time" id="clock-sizewell">--:--</div>
+      </div>
+      <div class="clock">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="10" stroke="none" fill="currentColor" opacity="0.2"/>
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+          <line x1="12" y1="12" x2="12" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="12" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <div class="clock-label">Flamanville</div>
+        <div class="clock-time" id="clock-flamanville">--:--</div>
+      </div>
+      <div class="clock">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="10" stroke="none" fill="currentColor" opacity="0.2"/>
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+          <line x1="12" y1="12" x2="12" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="12" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <div class="clock-label">Chernobyl</div>
+        <div class="clock-time" id="clock-chernobyl">--:--</div>
+      </div>
+    </div>
+    <div class="card" role="main" aria-label="Countdown timer">
+      <h1>Countdown</h1>
+      <div id="target">Target: Thu 6 Nov 2025 17:00 London time</div>
+      <div id="timer" aria-live="polite" aria-atomic="true">--:--:--:--</div>
+      <div class="small">Days : Hours : Minutes : Seconds</div>
+    </div>
+  </div>
+
+  <script>
+    // Target time: 6 Nov 2025 17:00 London time
+    const targetLondon = new Date('2025-11-06T17:00:00Z'); // UTC for London winter time
+
+    const timerEl = document.getElementById('timer');
+
+    function pad(n, digits=2){ return String(n).padStart(digits,'0'); }
+
+    function updateCountdown() {
+      const now = Date.now();
+      const diff = targetLondon.getTime() - now;
+      if (diff <= 0) {
+        timerEl.textContent = "Time's up!";
+        clearInterval(countdownInterval);
+        return;
+      }
+      const seconds = Math.floor(diff / 1000) % 60;
+      const minutes = Math.floor(diff / (1000 * 60)) % 60;
+      const hours = Math.floor(diff / (1000 * 60 * 60)) % 24;
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      timerEl.textContent = `${pad(days)}:${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    }
+
+    function updateClocks() {
+      const now = new Date();
+      document.getElementById('clock-hpc').textContent = new Intl.DateTimeFormat('en-GB', {hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'Europe/London'}).format(now);
+      document.getElementById('clock-sizewell').textContent = new Intl.DateTimeFormat('en-GB', {hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'Europe/London'}).format(now);
+      document.getElementById('clock-flamanville').textContent = new Intl.DateTimeFormat('en-GB', {hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'Europe/Paris'}).format(now);
+      document.getElementById('clock-chernobyl').textContent = new Intl.DateTimeFormat('en-GB', {hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'Europe/Kiev'}).format(now);
+    }
+
+    updateCountdown();
+    updateClocks();
+    const countdownInterval = setInterval(updateCountdown, 1000);
+    setInterval(updateClocks, 1000);
+  </script>
+</body>
+</html>
