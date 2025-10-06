@@ -76,7 +76,7 @@ button:hover{ opacity:0.9; }
   border-collapse:collapse;
 }
 .entries th, .entries td{
-  padding:0.5rem;
+  padding:0.2rem;
   border:1px solid #ddd;
 }
 .entries th{
