@@ -40,18 +40,16 @@
 <script src="script.js"></script>
 <script>
 const ADMIN_PASSWORD = 'nfks2312';
-const loginBtn = document.getElementById('loginBtn');
-const loginMsg = document.getElementById('loginMsg');
-const adminPanel = document.getElementById('adminPanel');
-const loginCard = document.getElementById('loginCard');
+const ALLOWED_RADIUS_METRES = 100; // needed for offsite highlighting
 
-loginBtn.addEventListener('click', ()=>{
+document.getElementById('loginBtn').addEventListener('click', ()=>{
   const pass = document.getElementById('adminPass').value;
   if(pass===ADMIN_PASSWORD){
-    loginCard.style.display='none';
-    adminPanel.style.display='block';
+    document.getElementById('loginCard').style.display='none';
+    document.getElementById('adminPanel').style.display='block';
     renderEntries();
   } else{
+    const loginMsg = document.getElementById('loginMsg');
     loginMsg.textContent='❌ Incorrect password';
     setTimeout(()=>loginMsg.textContent='',2000);
   }
@@ -87,7 +85,7 @@ document.getElementById('clearBtn').addEventListener('click', ()=>{
 
 function renderEntries(){
   const container=document.getElementById('entriesContainer');
-  const entries=loadEntries();
+  const entries=loadEntries() || [];
   if(!entries.length){ container.innerHTML='<p class="help">No entries yet.</p>'; return; }
   entries.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
   let html='<table class="entries"><thead><tr><th>#</th><th>Name</th><th>Timestamp</th><th>Lat</th><th>Lon</th><th>Distance</th></tr></thead><tbody>';
