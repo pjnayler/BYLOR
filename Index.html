@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mallard Court Office Entry Log</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs2@0.0.2/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <header class="header">
+    <img src="logo.png" alt="Company Logo" class="logo" />
+    <h1>Mallard Court Office Entry Log</h1>
+  </header>
+
+  <main class="container">
+    <section class="card checkin-card">
+      <form id="checkinForm" autocomplete="off">
+        <label for="name">Your name</label>
+        <input id="name" name="name" type="text" placeholder="Enter your name" required autofocus />
+        <button type="submit" id="submitBtn">Check in</button>
+      </form>
+      <div id="status" class="status"></div>
+    </section>
+
+    <section class="card qr-card">
+      <h2>QR code for printing</h2>
+      <label for="publicUrl">Public URL (optional)</label>
+      <input id="publicUrl" placeholder="https://yourdomain.com/index.html" />
+      <button id="genQr">Generate QR</button>
+      <div id="qrcode" style="margin-top:12px;"></div>
+    </section>
+
+    <footer class="footer">
+      <small>Admin log → <a href="admin.html">Admin page (password protected)</a></small>
+    </footer>
+  </main>
+
+  <script src="script.js"></script>
+  <script>
+    document.getElementById('checkinForm').addEventListener('submit', function(e){
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      if (!name) return;
+      const res = saveEntry(name);
+      const status = document.getElementById('status');
+      if (res) {
+        status.textContent = '✅ Checked in — thanks!';
+        status.classList.add('show');
+        document.getElementById('name').value = '';
+
+        // 🎉 Confetti effect
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+
+        setTimeout(()=> status.classList.remove('show'), 2500);
+      } else {
+        status.textContent = '❌ Error saving entry';
+        status.classList.add('show');
+        setTimeout(()=> status.classList.remove('show'), 2500);
+      }
+    });
+
+    document.getElementById('genQr').addEventListener('click', function(){
+      const url = document.getElementById('publicUrl').value.trim() || window.location.href;
+      const qDiv = document.getElementById('qrcode');
+      qDiv.innerHTML = '';
+      new QRCode(qDiv, { text: url, width:200, height:200, correctLevel: QRCode.CorrectLevel.H });
+    });
+
+    window.addEventListener('load', () => {
+      const qDiv = document.getElementById('qrcode');
+      qDiv.innerHTML = '';
+      new QRCode(qDiv, { text: window.location.href, width:200, height:200, correctLevel: QRCode.CorrectLevel.H });
+    });
+  </script>
+</body>
+</html>

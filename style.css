@@ -1,0 +1,120 @@
+:root {
+  --orange: #FF6600;
+  --white: #ffffff;
+  --gray-light: #f4f4f6;
+  --gray-medium: #ccc;
+  --gray-dark: #333;
+  --shadow: 0 4px 12px rgba(0,0,0,0.08);
+  font-family: 'Inter', sans-serif;
+}
+
+body {
+  margin:0;
+  background: var(--gray-light);
+  color: var(--gray-dark);
+}
+
+header.header {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background: var(--orange);
+  padding:12px 20px;
+  color:white;
+  box-shadow: var(--shadow);
+}
+
+header.header .logo {
+  height:40px;
+  width:auto;
+}
+
+header.header h1 {
+  font-size:18px;
+  font-weight:600;
+}
+
+.container {
+  max-width:720px;
+  margin:28px auto;
+  padding:16px;
+}
+
+.card {
+  background: var(--white);
+  border-radius:12px;
+  padding:20px;
+  margin-bottom:16px;
+  box-shadow: var(--shadow);
+}
+
+.checkin-card input[type="text"],
+.qr-card input[type="url"],
+#adminCard input[type="password"] {
+  width:100%;
+  padding:12px;
+  border-radius:8px;
+  border:1px solid var(--gray-medium);
+  margin-bottom:12px;
+  font-size:14px;
+}
+
+button {
+  padding:10px 16px;
+  border:0;
+  border-radius:8px;
+  background: var(--orange);
+  color:white;
+  cursor:pointer;
+  font-weight:600;
+  font-size:14px;
+  transition: 0.2s;
+}
+
+button:hover {
+  opacity:0.85;
+  transform: translateY(-1px);
+}
+
+button:active { transform: translateY(1px); }
+
+.status {
+  margin-top:10px;
+  font-weight:600;
+  opacity:0;
+  transition: 0.3s;
+}
+
+.status.show { opacity:1; }
+
+.footer { text-align:center; font-size:13px; color:#555; margin-top:12px; }
+.footer a { color: var(--orange); text-decoration:none; font-weight:600; }
+
+.entries {
+  width:100%;
+  border-collapse:collapse;
+  margin-top:12px;
+}
+
+.entries th, .entries td {
+  text-align:left;
+  padding:10px 6px;
+  border-bottom:1px solid #eee;
+}
+
+.entries thead th { font-weight:700; font-size:13px; color:#333; }
+.entries tbody tr:nth-child(odd){background:#fff;}
+.entries tbody tr:nth-child(even){background:#fff7f1;}
+
+.filelabel {
+  display:inline-block;
+  padding:6px 12px;
+  background:#eee;
+  border-radius:8px;
+  cursor:pointer;
+  margin-left:4px;
+}
+.filelabel input { display:none; }
+
+.row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; align-items:center; }
+.help { font-size:13px; color:#666; margin-top:6px; }
