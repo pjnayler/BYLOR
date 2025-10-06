@@ -24,7 +24,12 @@ function saveEntries(entries){
 function saveEntry(name, meta){
   if(!name) return false;
   const entries=loadEntries();
-  const entry={ id:genId(), name:name.trim(), ts:(new Date()).toISOString() };
+  const entry={ 
+    id:genId(), 
+    name:name.trim(), 
+    ts:(new Date()).toISOString(),
+    sap: meta.sap || ''
+  };
   if(meta && typeof meta==='object'){
     if(typeof meta.lat==='number') entry.lat=meta.lat;
     if(typeof meta.lon==='number') entry.lon=meta.lon;
@@ -41,7 +46,7 @@ function mergeEntries(incoming){
   existing.forEach(e=>map.set(e.id||(e.name+'|'+e.ts),e));
   incoming.forEach(e=>{ if(!e||!e.name||!e.ts) return;
     const key=e.id||(e.name+'|'+e.ts);
-    if(!map.has(key)) map.set(key,{id:e.id||genId(), name:e.name, ts:e.ts, lat:e.lat, lon:e.lon, distance_m:e.distance_m});
+    if(!map.has(key)) map.set(key,{id:e.id||genId(), name:e.name, ts:e.ts, sap:e.sap||'', lat:e.lat, lon:e.lon, distance_m:e.distance_m});
   });
   return Array.from(map.values());
 }
