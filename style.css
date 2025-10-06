@@ -21,7 +21,7 @@ body {
 }
 
 .header .logo {
-  max-height: 120px;        /* Bigger logo */
+  max-height: 180px;        /* Bigger logo */
   width: auto;              /* Keep aspect ratio */
   display: block;
   margin: 0 auto 1rem auto; /* Center and space below */
@@ -33,9 +33,9 @@ body {
 }
 
 /* Mobile responsiveness */
-@media (max-width: 600px) {
+@media (max-width: 500px) {
   .header .logo {
-    max-height: 70px;       /* Scaled-down for phones */
+    max-height: 100px;       /* Scaled-down for phones */
   }
   .header h1 {
     font-size: 1.4rem;
