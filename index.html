@@ -1,83 +1,120 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mallard Court Office Entry Log</title>
-  <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs2@0.0.2/qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mallard Court Office Entry Log</title>
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs2@0.0.2/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-  <header class="header">
-    <img src="logo.png" alt="Company Logo" class="logo" />
-    <h1>Mallard Court Office Entry Log</h1>
-  </header>
+<header class="header">
+<img src="logo.png" alt="Company Logo" class="logo" />
+<h1>Mallard Court Office Entry Log</h1>
+</header>
 
-  <main class="container">
-    <section class="card checkin-card">
-      <form id="checkinForm" autocomplete="off">
-        <label for="name">Your name</label>
-        <input id="name" name="name" type="text" placeholder="Enter your name" required autofocus />
-        <button type="submit" id="submitBtn">Check in</button>
-      </form>
-      <div id="status" class="status"></div>
-    </section>
+<main class="container">
+<section class="card checkin-card">
+  <form id="checkinForm" autocomplete="off">
+    <label for="name">Your name</label>
+    <input id="name" name="name" type="text" placeholder="Enter your name" required autofocus />
+    <button type="submit" id="submitBtn">Check in</button>
+  </form>
+  <div id="status" class="status"></div>
+</section>
 
-    <section class="card qr-card">
-      <h2>QR code for printing</h2>
-      <label for="publicUrl">Public URL (optional)</label>
-      <input id="publicUrl" placeholder="https://yourdomain.com/index.html" />
-      <button id="genQr">Generate QR</button>
-      <div id="qrcode" style="margin-top:12px;"></div>
-    </section>
+<section class="card qr-card">
+<h2>QR code for printing</h2>
+<label for="publicUrl">Public URL (optional)</label>
+<input id="publicUrl" placeholder="https://yourdomain.com/index.html" />
+<button id="genQr">Generate QR</button>
+<div id="qrcode" style="margin-top:12px;"></div>
+</section>
 
-    <footer class="footer">
-      <small>Admin log → <a href="admin.html">Admin page (password protected)</a></small>
-    </footer>
-  </main>
+<footer class="footer">
+<small>Admin log → <a href="admin.html">Admin page (password protected)</a></small>
+</footer>
+</main>
 
-  <script src="script.js"></script>
-  <script>
-    document.getElementById('checkinForm').addEventListener('submit', function(e){
-      e.preventDefault();
-      const name = document.getElementById('name').value.trim();
-      if (!name) return;
-      const res = saveEntry(name);
-      const status = document.getElementById('status');
-      if (res) {
-        status.textContent = '✅ Checked in — thanks!';
-        status.classList.add('show');
-        document.getElementById('name').value = '';
+<script src="script.js"></script>
+<script>
+// --- CONFIG: Office Location & Radius ---
+const OFFICE_LAT = 51.5074;   // replace with actual latitude
+const OFFICE_LON = -2.995989;   // replace with actual longitude
+const ALLOWED_RADIUS_METRES = 100; // 100m radius
 
-        // 🎉 Confetti effect
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
+// --- Check-in handler with geo restriction ---
+async function tryCheckIn() {
+  const name = document.getElementById('name').value.trim();
+  if (!name) return;
+  const status = document.getElementById('status');
+  status.textContent = 'Getting location…';
+  status.classList.add('show');
 
-        setTimeout(()=> status.classList.remove('show'), 2500);
-      } else {
-        status.textContent = '❌ Error saving entry';
-        status.classList.add('show');
-        setTimeout(()=> status.classList.remove('show'), 2500);
-      }
-    });
+  const position = await getPosition({timeout:10000}).catch(err => {
+    status.textContent = 'Location required. Please enable location and try again.';
+    setTimeout(()=> status.classList.remove('show'), 3000);
+    return null;
+  });
+  if (!position) return;
 
-    document.getElementById('genQr').addEventListener('click', function(){
-      const url = document.getElementById('publicUrl').value.trim() || window.location.href;
-      const qDiv = document.getElementById('qrcode');
-      qDiv.innerHTML = '';
-      new QRCode(qDiv, { text: url, width:200, height:200, correctLevel: QRCode.CorrectLevel.H });
-    });
+  const lat = position.coords.latitude;
+  const lon = position.coords.longitude;
+  const distance = haversineDistanceMetres(lat, lon, OFFICE_LAT, OFFICE_LON);
 
-    window.addEventListener('load', () => {
-      const qDiv = document.getElementById('qrcode');
-      qDiv.innerHTML = '';
-      new QRCode(qDiv, { text: window.location.href, width:200, height:200, correctLevel: QRCode.CorrectLevel.H });
-    });
-  </script>
+  if (distance <= ALLOWED_RADIUS_METRES) {
+    const res = saveEntry(name, {lat, lon, distance_m: Math.round(distance)});
+    if (res) {
+      status.textContent = '✅ Checked in — thanks!';
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+      document.getElementById('name').value = '';
+      setTimeout(()=> status.classList.remove('show'), 2500);
+    } else {
+      status.textContent = '❌ Error saving entry';
+      setTimeout(()=> status.classList.remove('show'), 2500);
+    }
+  } else {
+    status.textContent = `You are ${Math.round(distance)} m away — check-in only allowed within ${ALLOWED_RADIUS_METRES} m.`;
+    setTimeout(()=> status.classList.remove('show'), 5000);
+  }
+}
+
+function getPosition(options={}) {
+  return new Promise((resolve,reject)=>{
+    if(!navigator.geolocation) return reject(new Error('Geolocation not supported'));
+    navigator.geolocation.getCurrentPosition(resolve,reject,options);
+  });
+}
+
+function haversineDistanceMetres(lat1, lon1, lat2, lon2){
+  const toRad = x => x*Math.PI/180;
+  const R=6371000;
+  const dLat=toRad(lat2-lat1);
+  const dLon=toRad(lon2-lon1);
+  const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+  const c=2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R*c;
+}
+
+document.getElementById('checkinForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  tryCheckIn();
+});
+
+// --- QR code generation ---
+document.getElementById('genQr').addEventListener('click', function(){
+  const url = document.getElementById('publicUrl').value.trim() || window.location.href;
+  const qDiv = document.getElementById('qrcode');
+  qDiv.innerHTML = '';
+  new QRCode(qDiv, { text: url, width:200, height:200, correctLevel: QRCode.CorrectLevel.H });
+});
+window.addEventListener('load', () => {
+  const qDiv = document.getElementById('qrcode');
+  qDiv.innerHTML = '';
+  new QRCode(qDiv, { text: window.location.href, width:200, height:200, correctLevel: QRCode.CorrectLevel.H });
+});
+</script>
 </body>
 </html>
