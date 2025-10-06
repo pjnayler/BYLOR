@@ -3,101 +3,93 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Admin — Mallard Court Office Entry</title>
+<title>Admin — Mallard Court Office Entry Log</title>
 <link rel="stylesheet" href="style.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDP-AOQt7L4ynAl4prxwGlYMy4GJYBImXc",
+    authDomain: "mallardcourtlog.firebaseapp.com",
+    projectId: "mallardcourtlog",
+    storageBucket: "mallardcourtlog.firebasestorage.app",
+    messagingSenderId: "200747477687",
+    appId: "1:200747477687:web:2aa3d097a204232f08fb32"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const ADMIN_PASSWORD = 'nfks2312';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const loginBtn = document.getElementById('loginBtn');
+    const loginMsg = document.getElementById('loginMsg');
+    const loginCard = document.getElementById('loginCard');
+    const adminPanel = document.getElementById('adminPanel');
+
+    loginBtn.addEventListener('click', () => {
+      const pass = document.getElementById('adminPass').value;
+      if(pass === ADMIN_PASSWORD){
+        loginCard.style.display='none';
+        adminPanel.style.display='block';
+        startAdminLog();
+      } else {
+        loginMsg.textContent = '❌ Incorrect password';
+        setTimeout(() => loginMsg.textContent='', 2000);
+      }
+    });
+
+    function startAdminLog(){
+      const q = query(collection(db,'checkins'), orderBy('ts','desc'));
+      onSnapshot(q, snapshot => {
+        const entries = [];
+        snapshot.forEach(doc => entries.push({...doc.data(), id: doc.id}));
+        renderEntries(entries);
+      });
+    }
+
+    function renderEntries(entries){
+      const container = document.getElementById('entriesContainer');
+      if(!entries.length){ container.innerHTML='<p class="help">No entries yet.</p>'; return; }
+      let html='<table class="entries"><thead><tr><th>#</th><th>Name</th><th>SAP Number</th><th>Timestamp</th><th>Lat</th><th>Lon</th><th>Distance</th></tr></thead><tbody>';
+      entries.forEach((e,i)=>{
+        const latView = e.lat ? e.lat.toFixed(6) : '';
+        const lonView = e.lon ? e.lon.toFixed(6) : '';
+        const distView = (typeof e.distance_m==='number') ? (e.distance_m+' m') : '';
+        html += `<tr><td>${i+1}</td><td>${e.name}</td><td>${e.sap}</td><td>${new Date(e.ts).toLocaleString()}</td><td>${latView}</td><td>${lonView}</td><td>${distView}</td></tr>`;
+      });
+      html+='</tbody></table>';
+      container.innerHTML = html;
+    }
+  });
+</script>
 </head>
 <body>
 <header class="header">
-<img src="logo.png" alt="Company Logo" class="logo" />
-<h1>Admin — Mallard Court Office Entry </h1>
+  <img src="logo.png" alt="Company Logo" class="logo" />
+  <h1>Admin — Mallard Court Office Entry Log</h1>
 </header>
 
 <main class="container">
 <section class="card" id="loginCard">
-<label for="adminPass">Enter admin password</label>
-<input id="adminPass" type="password" placeholder="Password" />
-<button id="loginBtn">Unlock Log</button>
-<div id="loginMsg" class="status"></div>
+  <label for="adminPass">Enter admin password</label>
+  <input id="adminPass" type="password" placeholder="Password" />
+  <button id="loginBtn">Unlock Log</button>
+  <div id="loginMsg" class="status"></div>
 </section>
 
 <section class="card" id="adminPanel" style="display:none;">
-<div class="row">
-<button id="refreshBtn">Refresh log</button>
-<button id="exportBtn">Export JSON</button>
-<label class="filelabel">Import JSON
-<input id="importFile" type="file" accept=".json" />
-</label>
-<button id="clearBtn" style="background:#FF6600;color:white;">Clear all entries</button>
-</div>
-<div id="entriesContainer" class="entriesContainer"></div>
+  <div id="entriesContainer" class="entriesContainer"></div>
 </section>
+</main>
 
 <footer class="footer">
 <small><a href="index.html">Back to check-in page</a></small>
 </footer>
-
-<script src="script.js"></script>
-<script>
-const ADMIN_PASSWORD = 'nfks2312';
-const ALLOWED_RADIUS_METRES = 100; // needed for offsite highlighting
-
-document.getElementById('loginBtn').addEventListener('click', ()=>{
-  const pass = document.getElementById('adminPass').value;
-  if(pass===ADMIN_PASSWORD){
-    document.getElementById('loginCard').style.display='none';
-    document.getElementById('adminPanel').style.display='block';
-    renderEntries();
-  } else{
-    const loginMsg = document.getElementById('loginMsg');
-    loginMsg.textContent='❌ Incorrect password';
-    setTimeout(()=>loginMsg.textContent='',2000);
-  }
-});
-
-document.getElementById('refreshBtn').addEventListener('click', renderEntries);
-document.getElementById('exportBtn').addEventListener('click', ()=>{
-  const entries=loadEntries();
-  const blob=new Blob([JSON.stringify(entries,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a'); a.href=url; a.download='mallard_entries.json'; a.click();
-  URL.revokeObjectURL(url);
-});
-
-document.getElementById('importFile').addEventListener('change', async (e)=>{
-  const f=e.target.files[0]; if(!f) return;
-  try{
-    const text = await f.text();
-    const incoming = JSON.parse(text);
-    const merged = mergeEntries(incoming);
-    saveEntries(merged);
-    alert('Import complete — merged entries saved.');
-    renderEntries();
-  } catch(err){ alert('Error importing JSON: '+err.message);}
-  e.target.value='';
-});
-
-document.getElementById('clearBtn').addEventListener('click', ()=>{
-  if(!confirm('Are you sure you want to permanently delete ALL entries?')) return;
-  localStorage.removeItem('mc_entries');
-  renderEntries();
-});
-
-function renderEntries(){
-  const container=document.getElementById('entriesContainer');
-  const entries=loadEntries() || [];
-  if(!entries.length){ container.innerHTML='<p class="help">No entries yet.</p>'; return; }
-  entries.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
-  let html='<table class="entries"><thead><tr><th>#</th><th>Name</th><th>Timestamp</th><th>Lat</th><th>Lon</th><th>Distance</th></tr></thead><tbody>';
-  entries.forEach((e,i)=>{
-    const latView = e.lat ? e.lat.toFixed(6) : '';
-    const lonView = e.lon ? e.lon.toFixed(6) : '';
-    const distView = (typeof e.distance_m==='number') ? (e.distance_m+' m') : '';
-    const offsite = (typeof e.distance_m==='number' && e.distance_m>ALLOWED_RADIUS_METRES)?' style="background:#ffe9e6;"':'';
-    html += `<tr${offsite}><td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${new Date(e.ts).toLocaleString()}</td><td>${latView}</td><td>${lonView}</td><td>${distView}</td></tr>`;
-  });
-  html+='</tbody></table>'; container.innerHTML=html;
-}
-</script>
 </body>
 </html>
