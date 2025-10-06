@@ -6,7 +6,6 @@
 <title>Mallard Court Office Entry Log</title>
 <link rel="stylesheet" href="style.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs2@0.0.2/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
@@ -18,9 +17,14 @@
 <main class="container">
 <section class="card checkin-card">
   <form id="checkinForm" autocomplete="off">
-    <label for="name">Your name</label>
+    <label for="name">Your Name</label>
     <input id="name" name="name" type="text" placeholder="Enter your name" required autofocus />
-    <button type="submit" id="submitBtn">Check in</button>
+
+    <label for="sap">SAP Number</label>
+    <input id="sap" name="sap" type="number" placeholder="Enter your SAP Number" required 
+           pattern="\d*" inputmode="numeric" />
+
+    <button type="submit" id="submitBtn">Check In</button>
   </form>
   <div id="status" class="status"></div>
 </section>
@@ -28,20 +32,31 @@
 <footer class="footer">
 <small>Admin log → <a href="admin.html">Admin page (password protected)</a></small>
 </footer>
-</main>
 
 <script src="script.js"></script>
 <script>
 // --- CONFIG: Office Location & Radius ---
-const OFFICE_LAT = 51.14688;   // replace with actual latitude
-const OFFICE_LON = -2.99605;   // replace with actual longitude
+const OFFICE_LAT = 51.5074;   // Replace with your office latitude
+const OFFICE_LON = -0.1278;   // Replace with your office longitude
 const ALLOWED_RADIUS_METRES = 100; // 100m radius
 
-// --- Check-in handler with geo restriction ---
 async function tryCheckIn() {
   const name = document.getElementById('name').value.trim();
-  if (!name) return;
+  const sap = document.getElementById('sap').value.trim();
   const status = document.getElementById('status');
+  if (!name || !sap) {
+    status.textContent = '❌ Please fill in all fields';
+    status.classList.add('show');
+    setTimeout(()=> status.classList.remove('show'), 2500);
+    return;
+  }
+  if (isNaN(sap)) {
+    status.textContent = '❌ SAP Number must be numeric';
+    status.classList.add('show');
+    setTimeout(()=> status.classList.remove('show'), 2500);
+    return;
+  }
+
   status.textContent = 'Getting location…';
   status.classList.add('show');
 
@@ -57,11 +72,12 @@ async function tryCheckIn() {
   const distance = haversineDistanceMetres(lat, lon, OFFICE_LAT, OFFICE_LON);
 
   if (distance <= ALLOWED_RADIUS_METRES) {
-    const res = saveEntry(name, {lat, lon, distance_m: Math.round(distance)});
+    const res = saveEntry(name, {sap, lat, lon, distance_m: Math.round(distance)});
     if (res) {
       status.textContent = '✅ Checked in — thanks!';
       confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       document.getElementById('name').value = '';
+      document.getElementById('sap').value = '';
       setTimeout(()=> status.classList.remove('show'), 2500);
     } else {
       status.textContent = '❌ Error saving entry';
@@ -93,19 +109,6 @@ function haversineDistanceMetres(lat1, lon1, lat2, lon2){
 document.getElementById('checkinForm').addEventListener('submit', e=>{
   e.preventDefault();
   tryCheckIn();
-});
-
-// --- QR code generation ---
-document.getElementById('genQr').addEventListener('click', function(){
-  const url = document.getElementById('publicUrl').value.trim() || window.location.href;
-  const qDiv = document.getElementById('qrcode');
-  qDiv.innerHTML = '';
-  new QRCode(qDiv, { text: url, width:200, height:200, correctLevel: QRCode.CorrectLevel.H });
-});
-window.addEventListener('load', () => {
-  const qDiv = document.getElementById('qrcode');
-  qDiv.innerHTML = '';
-  new QRCode(qDiv, { text: window.location.href, width:200, height:200, correctLevel: QRCode.CorrectLevel.H });
 });
 </script>
 </body>
