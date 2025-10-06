@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Admin — Mallard Court Office Entry Log</title>
+<title>Admin — Mallard Court Office Entry</title>
 <link rel="stylesheet" href="style.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 <header class="header">
 <img src="logo.png" alt="Company Logo" class="logo" />
-<h1>Admin — Mallard Court Office Entry Log</h1>
+<h1>Admin — Mallard Court Office Entry </h1>
 </header>
 
 <main class="container">
@@ -40,7 +40,7 @@
 <script src="script.js"></script>
 <script>
 const ADMIN_PASSWORD = 'nfks2312';
-const ALLOWED_RADIUS_METRES = 100;
+const ALLOWED_RADIUS_METRES = 100; // needed for offsite highlighting
 
 document.getElementById('loginBtn').addEventListener('click', ()=>{
   const pass = document.getElementById('adminPass').value;
@@ -88,9 +88,16 @@ function renderEntries(){
   const entries=loadEntries() || [];
   if(!entries.length){ container.innerHTML='<p class="help">No entries yet.</p>'; return; }
   entries.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
-  let html='<table class="entries"><thead><tr><th>#</th><th>Name</th><th>SAP Number</th><th>Timestamp</th><th>Lat</th><th>Lon</th><th>Distance</th></tr></thead><tbody>';
+  let html='<table class="entries"><thead><tr><th>#</th><th>Name</th><th>Timestamp</th><th>Lat</th><th>Lon</th><th>Distance</th></tr></thead><tbody>';
   entries.forEach((e,i)=>{
     const latView = e.lat ? e.lat.toFixed(6) : '';
     const lonView = e.lon ? e.lon.toFixed(6) : '';
     const distView = (typeof e.distance_m==='number') ? (e.distance_m+' m') : '';
-    const offsite = (typeof e.distance_m==='number' && e.distance
+    const offsite = (typeof e.distance_m==='number' && e.distance_m>ALLOWED_RADIUS_METRES)?' style="background:#ffe9e6;"':'';
+    html += `<tr${offsite}><td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${new Date(e.ts).toLocaleString()}</td><td>${latView}</td><td>${lonView}</td><td>${distView}</td></tr>`;
+  });
+  html+='</tbody></table>'; container.innerHTML=html;
+}
+</script>
+</body>
+</html>
