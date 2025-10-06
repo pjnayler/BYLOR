@@ -3,6 +3,7 @@
   --white: #ffffff;
   --gray: #f4f4f4;
   --dark: #333333;
+  --shadow: rgba(0,0,0,0.1);
 }
 
 body {
@@ -21,10 +22,10 @@ body {
 }
 
 .header .logo {
-  max-height: 180px;        /* Bigger logo */
-  width: auto;              /* Keep aspect ratio */
+  max-height: 120px;       /* Big desktop logo */
+  width: auto;
   display: block;
-  margin: 0 auto 1rem auto; /* Center and space below */
+  margin: 0 auto 1rem auto;
 }
 
 .header h1 {
@@ -32,17 +33,16 @@ body {
   font-size: 1.8rem;
 }
 
-/* Mobile responsiveness */
-@media (max-width: 500px) {
+/* Responsive logo & header on mobile */
+@media (max-width: 600px) {
   .header .logo {
-    max-height: 100px;       /* Scaled-down for phones */
+    max-height: 70px;
   }
   .header h1 {
     font-size: 1.4rem;
   }
 }
 
-/* Container and card styling */
 .container {
   max-width: 500px;
   margin: 2rem auto;
@@ -53,11 +53,10 @@ body {
   background: var(--white);
   padding: 1.5rem;
   border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 10px var(--shadow);
   margin-bottom: 1.5rem;
 }
 
-/* Form styling */
 input[type="text"],
 input[type="number"],
 input[type="password"] {
@@ -67,6 +66,7 @@ input[type="password"] {
   border-radius: 6px;
   border: 1px solid #ccc;
   font-size: 1rem;
+  box-sizing: border-box;
 }
 
 button {
@@ -77,15 +77,91 @@ button {
   font-size: 1rem;
   border-radius: 6px;
   cursor: pointer;
+  transition: background 0.2s;
 }
 
 button:hover {
   background: #e65c00;
 }
 
-/* Status messages */
 .status {
   margin-top: 0.5rem;
   color: #333;
   font-weight: 600;
+}
+
+.entriesContainer table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.entriesContainer th,
+.entriesContainer td {
+  border: 1px solid #ddd;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.entriesContainer th {
+  background: var(--orange);
+  color: var(--white);
+  font-weight: 600;
+}
+
+.entriesContainer tr:nth-child(even){
+  background: #f9f9f9;
+}
+
+.entriesContainer tr:hover {
+  background: #ffe8d6;
+}
+
+.footer {
+  text-align: center;
+  margin: 2rem 0;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.filelabel {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: var(--orange);
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-left: 0.5rem;
+}
+
+.filelabel input {
+  display: none;
+}
+
+/* Help text styling */
+.help {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 1rem 0;
+}
+
+/* Smaller buttons row for admin page */
+.card .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.card .row button {
+  flex: 1;
+  min-width: 100px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 400px){
+  .card .row {
+    flex-direction: column;
+  }
 }
