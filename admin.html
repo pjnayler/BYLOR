@@ -1,95 +1,144 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Admin — Mallard Court Office Entry Log</title>
-<link rel="stylesheet" href="style.css">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-
-<!-- Firebase -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-  import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDP-AOQt7L4ynAl4prxwGlYMy4GJYBImXc",
-    authDomain: "mallardcourtlog.firebaseapp.com",
-    projectId: "mallardcourtlog",
-    storageBucket: "mallardcourtlog.firebasestorage.app",
-    messagingSenderId: "200747477687",
-    appId: "1:200747477687:web:2aa3d097a204232f08fb32"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  const ADMIN_PASSWORD = 'nfks2312';
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const loginBtn = document.getElementById('loginBtn');
-    const loginMsg = document.getElementById('loginMsg');
-    const loginCard = document.getElementById('loginCard');
-    const adminPanel = document.getElementById('adminPanel');
-
-    loginBtn.addEventListener('click', () => {
-      const pass = document.getElementById('adminPass').value;
-      if(pass === ADMIN_PASSWORD){
-        loginCard.style.display='none';
-        adminPanel.style.display='block';
-        startAdminLog();
-      } else {
-        loginMsg.textContent = '❌ Incorrect password';
-        setTimeout(() => loginMsg.textContent='', 2000);
-      }
-    });
-
-    function startAdminLog(){
-      const q = query(collection(db,'checkins'), orderBy('ts','desc'));
-      onSnapshot(q, snapshot => {
-        const entries = [];
-        snapshot.forEach(doc => entries.push({...doc.data(), id: doc.id}));
-        renderEntries(entries);
-      });
-    }
-
-    function renderEntries(entries){
-      const container = document.getElementById('entriesContainer');
-      if(!entries.length){ container.innerHTML='<p class="help">No entries yet.</p>'; return; }
-      let html='<table class="entries"><thead><tr><th>#</th><th>Name</th><th>SAP Number</th><th>Timestamp</th><th>Lat</th><th>Lon</th><th>Distance</th></tr></thead><tbody>';
-      entries.forEach((e,i)=>{
-        const latView = e.lat ? e.lat.toFixed(6) : '';
-        const lonView = e.lon ? e.lon.toFixed(6) : '';
-        const distView = (typeof e.distance_m==='number') ? (e.distance_m+' m') : '';
-        html += `<tr><td>${i+1}</td><td>${e.name}</td><td>${e.sap}</td><td>${new Date(e.ts).toLocaleString()}</td><td>${latView}</td><td>${lonView}</td><td>${distView}</td></tr>`;
-      });
-      html+='</tbody></table>';
-      container.innerHTML = html;
-    }
-  });
-</script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mallard Court — Admin Log</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 </head>
 <body>
-<header class="header">
-  <img src="logo.png" alt="Company Logo" class="logo" />
-  <h1>Admin — Mallard Court Office Entry Log</h1>
-</header>
+  <header class="header">
+    <img src="logo.png" alt="Company Logo" class="logo" />
+    <h1>Admin — Mallard Court Entry Log</h1>
+  </header>
 
-<main class="container">
-<section class="card" id="loginCard">
-  <label for="adminPass">Enter admin password</label>
-  <input id="adminPass" type="password" placeholder="Password" />
-  <button id="loginBtn">Unlock Log</button>
-  <div id="loginMsg" class="status"></div>
-</section>
+  <main class="container">
+    <section class="card" id="loginCard">
+      <label for="adminPass">Enter admin password</label>
+      <input id="adminPass" type="password" placeholder="Password" />
+      <button id="loginBtn">Unlock Log</button>
+      <div id="loginMsg" class="status"></div>
+    </section>
 
-<section class="card" id="adminPanel" style="display:none;">
-  <div id="entriesContainer" class="entriesContainer"></div>
-</section>
-</main>
+    <section class="card" id="adminPanel" style="display:none;">
+      <div class="row">
+        <button id="refreshBtn">Refresh</button>
+        <button id="exportBtn">Export CSV</button>
+        <button id="clearBtn" style="background:#FF6600;color:#fff;">Clear all (danger)</button>
+      </div>
+      <div id="entriesContainer" class="entriesContainer"></div>
+    </section>
+  </main>
 
-<footer class="footer">
-<small><a href="index.html">Back to check-in page</a></small>
-</footer>
+  <footer class="footer">
+    <small><a href="index.html">Back to check-in page</a></small>
+  </footer>
+
+  <script>
+    // ---------------- CONFIG - REPLACE THESE ----------------
+    const SUPABASE_URL = 'https://wxczoigytxeepkfhvifm.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4Y3pvaWd5dHhlZXBrZmh2aWZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2ODE2NzUsImV4cCI6MjA3NTI1NzY3NX0.PjHcgrZVAa5G56DseG5G9Qf1t3cE5wXOkat_GWhuQE0';
+';
+    const ADMIN_PASSWORD = 'nfks2312';
+    // -------------------------------------------------------
+
+    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function escapeHtml(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+
+    async function fetchEntries() {
+      const { data, error } = await supabase
+        .from('checkins')
+        .select('*')
+        .order('ts', { ascending: false });
+      if (error) { console.error('fetch error', error); return []; }
+      return data || [];
+    }
+
+    function renderEntries(entries) {
+      const container = document.getElementById('entriesContainer');
+      if (!entries || !entries.length) {
+        container.innerHTML = '<p class="help">No entries yet.</p>';
+        return;
+      }
+      let html = '<table class="entries"><thead><tr><th>#</th><th>Name</th><th>SAP</th><th>Timestamp</th><th>Lat</th><th>Lon</th><th>Distance</th></tr></thead><tbody>';
+      entries.forEach((e,i) => {
+        const latView = (e.lat !== null && e.lat !== undefined) ? Number(e.lat).toFixed(6) : '';
+        const lonView = (e.lon !== null && e.lon !== undefined) ? Number(e.lon).toFixed(6) : '';
+        const distView = (typeof e.distance_m === 'number' || typeof e.distance_m === 'string') ? (e.distance_m + ' m') : '';
+        html += `<tr><td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${escapeHtml(e.sap)}</td><td>${new Date(e.ts).toLocaleString()}</td><td>${latView}</td><td>${lonView}</td><td>${distView}</td></tr>`;
+      });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    async function exportCSV(entries) {
+      if (!entries || !entries.length) return;
+      const headers = ['id','name','sap','ts','lat','lon','distance_m'];
+      const rows = entries.map(e => [
+        e.id ?? '',
+        `"${String(e.name).replace(/"/g,'\"')}"`,
+        `"${String(e.sap).replace(/"/g,'\"')}"`,
+        e.ts ?? '',
+        e.lat ?? '',
+        e.lon ?? '',
+        e.distance_m ?? ''
+      ].join(','));
+      const csv = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'checkins_export.csv'; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+      const pass = document.getElementById('adminPass').value;
+      const loginMsg = document.getElementById('loginMsg');
+      if (pass !== ADMIN_PASSWORD) {
+        loginMsg.textContent = '❌ Incorrect password';
+        setTimeout(()=> loginMsg.textContent='', 2000);
+        return;
+      }
+      // show panel
+      document.getElementById('loginCard').style.display = 'none';
+      document.getElementById('adminPanel').style.display = 'block';
+
+      // initial fetch & render
+      const entries = await fetchEntries();
+      renderEntries(entries);
+
+      // subscribe to real-time changes
+      supabase.channel('public:checkins')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'checkins' }, async () => {
+          const updated = await fetchEntries();
+          renderEntries(updated);
+        })
+        .subscribe();
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', async () => {
+      const entries = await fetchEntries();
+      renderEntries(entries);
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', async () => {
+      const entries = await fetchEntries();
+      exportCSV(entries);
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', async () => {
+      if (!confirm('Permanently delete all check-ins?')) return;
+      // be careful: this removes everything - consider restricting
+      const { error } = await supabase.from('checkins').delete().neq('id', 0);
+      if (error) {
+        alert('Error clearing entries: ' + error.message);
+      } else {
+        alert('All entries deleted.');
+        renderEntries([]);
+      }
+    });
+  </script>
 </body>
 </html>
