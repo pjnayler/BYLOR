@@ -3,136 +3,224 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mallard Court — Check In</title>
+  <title>Mallard Court — Admin Check-ins</title>
   <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f9fafb;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #1e3a8a;
+      color: white;
+      text-align: center;
+      padding: 1rem;
+    }
+    .container {
+      max-width: 900px;
+      margin: 2rem auto;
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      padding: 0.75rem;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+    th {
+      background: #f3f4f6;
+      font-weight: 600;
+    }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover {
+      background: #1e40af;
+    }
+    .logout-btn {
+      background: #dc2626;
+    }
+    .hidden {
+      display: none;
+    }
+    .login-box {
+      max-width: 400px;
+      margin: 5rem auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    input[type=password] {
+      width: 80%;
+      padding: 0.5rem;
+      margin: 1rem 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+  </style>
 </head>
 <body>
-  <header class="header">
-    <img src="logo.png" alt="Company Logo" class="logo" />
-    <h1>Mallard Court Office Entry Log</h1>
+  <header>
+    <h1>Mallard Court — Admin Dashboard</h1>
   </header>
 
-  <main class="container">
-    <section class="card checkin-card">
-      <form id="checkinForm" autocomplete="off">
-        <label for="name">Your name</label>
-        <input id="name" name="name" type="text" placeholder="Enter your name" required autofocus />
+  <div id="loginSection" class="login-box">
+    <h2>Admin Login</h2>
+    <p>Please enter the admin password:</p>
+    <input type="password" id="adminPass" placeholder="Enter password" />
+    <br>
+    <button id="loginBtn">Login</button>
+    <p id="loginStatus" style="color: crimson; font-size: 0.9rem; margin-top: 0.5rem;"></p>
+  </div>
 
-        <label for="sap">SAP Number</label>
-        <input id="sap" name="sap" type="text" placeholder="Enter your SAP Number" required pattern="\d*" inputmode="numeric" />
-
-        <button type="submit" id="submitBtn">Check In</button>
-      </form>
-
-      <div id="status" class="status" aria-live="polite"></div>
-      <p class="help">Make sure location is enabled on your phone. Check-in is allowed only within the office radius.</p>
-    </section>
+  <main id="adminSection" class="container hidden">
+    <div class="controls">
+      <h2>Check-in Records</h2>
+      <div>
+        <button id="refreshBtn">🔄 Refresh</button>
+        <button id="exportBtn">⬇️ Export CSV</button>
+        <button id="logoutBtn" class="logout-btn">Logout</button>
+      </div>
+    </div>
+    <table id="checkinTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>SAP</th>
+          <th>Time</th>
+          <th>Latitude</th>
+          <th>Longitude</th>
+          <th>Distance (m)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </main>
-
-  <footer class="footer">
-    <small>Admin → <a href="admin.html">Admin page (password protected)</a></small>
-  </footer>
 
   <script>
     // ---------------- CONFIGURATION ----------------
     const SUPABASE_URL = 'https://wxczoigytxeepkfhvifm.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4Y3pvaWd5dHhlZXBrZmh2aWZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2ODE2NzUsImV4cCI6MjA3NTI1NzY3NX0.PjHcgrZVAa5G56DseG5G9Qf1t3cE5wXOkat_GWhuQE0';
-    const OFFICE_LAT = 51.14688;   // Replace with your real latitude
-    const OFFICE_LON = -2.99605;    // Replace with your real longitude
-    const ALLOWED_RADIUS_METRES = 300;
+    const ADMIN_PASSWORD = 'Mallard2025'; // change this!
     // ------------------------------------------------
 
-    // Initialize Supabase client
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Get device position as Promise
-    function getPosition(options = {}) {
-      return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) reject(new Error('Geolocation not supported'));
-        navigator.geolocation.getCurrentPosition(resolve, reject, options);
-      });
-    }
+    const loginSection = document.getElementById('loginSection');
+    const adminSection = document.getElementById('adminSection');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const loginStatus = document.getElementById('loginStatus');
+    const tableBody = document.querySelector('#checkinTable tbody');
 
-    // Haversine distance (metres)
-    function haversineDistanceMetres(lat1, lon1, lat2, lon2) {
-      const toRad = x => x * Math.PI / 180;
-      const R = 6371000;
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a = Math.sin(dLat / 2) ** 2 +
-                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-                Math.sin(dLon / 2) ** 2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
-    }
-
-    async function saveEntryToSupabase(name, sap, lat, lon, distance_m) {
-      try {
-        const ts = new Date().toISOString();
-        const { error } = await supabase
-          .from('checkins')
-          .insert([{ name, sap: String(sap), ts, lat, lon, distance_m }]);
-        if (error) throw error;
-        return true;
-      } catch (err) {
-        console.error('Supabase insert error:', err);
-        return false;
-      }
-    }
-
-    const form = document.getElementById('checkinForm');
-    const statusEl = document.getElementById('status');
-
-    form.addEventListener('submit', async (ev) => {
-      ev.preventDefault();
-
-      const name = form.name.value.trim();
-      const sap = form.sap.value.trim();
-
-      if (!name || !sap) {
-        showStatus('❌ Please fill in both Name and SAP number.', true);
-        return;
-      }
-      if (isNaN(sap)) {
-        showStatus('❌ SAP Number must be numeric.', true);
-        return;
-      }
-
-      showStatus('📍 Getting location…');
-      const pos = await getPosition({ timeout: 10000 }).catch(() => null);
-      if (!pos) {
-        showStatus('⚠️ Location required for check-in. Please enable GPS and try again.', true);
-        return;
-      }
-
-      const { latitude: lat, longitude: lon } = pos.coords;
-      const distance = Math.round(haversineDistanceMetres(lat, lon, OFFICE_LAT, OFFICE_LON));
-
-      if (distance > ALLOWED_RADIUS_METRES) {
-        showStatus(`❌ You are ${distance} m away — check-in allowed only within ${ALLOWED_RADIUS_METRES} m.`, true);
-        return;
-      }
-
-      const ok = await saveEntryToSupabase(name, sap, lat, lon, distance);
-      if (ok) {
-        showStatus('✅ Checked in — thank you!');
-        confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
-        form.reset();
+    // Password check
+    loginBtn.addEventListener('click', () => {
+      const entered = document.getElementById('adminPass').value.trim();
+      if (entered === ADMIN_PASSWORD) {
+        sessionStorage.setItem('adminLoggedIn', 'true');
+        showAdmin();
       } else {
-        showStatus('❌ Error saving entry — please try again.', true);
+        loginStatus.textContent = 'Incorrect password. Try again.';
       }
     });
 
-    function showStatus(msg, isError = false) {
-      statusEl.textContent = msg;
-      statusEl.classList.add('show');
-      statusEl.style.color = isError ? 'crimson' : 'green';
-      clearTimeout(statusEl._timeout);
-      statusEl._timeout = setTimeout(() => statusEl.classList.remove('show'), 4000);
+    logoutBtn.addEventListener('click', () => {
+      sessionStorage.removeItem('adminLoggedIn');
+      adminSection.classList.add('hidden');
+      loginSection.classList.remove('hidden');
+    });
+
+    function showAdmin() {
+      loginSection.classList.add('hidden');
+      adminSection.classList.remove('hidden');
+      loadCheckins();
     }
+
+    async function loadCheckins() {
+      const { data, error } = await supabase.from('checkins').select('*').order('ts', { ascending: false });
+      if (error) {
+        console.error('Error fetching data:', error);
+        return;
+      }
+      renderTable(data);
+    }
+
+    function renderTable(rows) {
+      tableBody.innerHTML = '';
+      if (!rows || rows.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No records found</td></tr>';
+        return;
+      }
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        const date = new Date(r.ts).toLocaleString();
+        tr.innerHTML = `
+          <td>${r.name}</td>
+          <td>${r.sap}</td>
+          <td>${date}</td>
+          <td>${r.lat?.toFixed(5) || ''}</td>
+          <td>${r.lon?.toFixed(5) || ''}</td>
+          <td>${r.distance_m ?? ''}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    refreshBtn.addEventListener('click', loadCheckins);
+
+    exportBtn.addEventListener('click', async () => {
+      const { data, error } = await supabase.from('checkins').select('*');
+      if (error || !data) return alert('Error exporting data');
+      const csv = convertToCSV(data);
+      downloadCSV(csv, 'mallard_checkins.csv');
+    });
+
+    function convertToCSV(arr) {
+      const headers = Object.keys(arr[0]);
+      const rows = arr.map(obj => headers.map(h => `"${obj[h] ?? ''}"`).join(','));
+      return [headers.join(','), ...rows].join('\n');
+    }
+
+    function downloadCSV(csv, filename) {
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Auto-login if session is active
+    if (sessionStorage.getItem('adminLoggedIn') === 'true') showAdmin();
   </script>
 </body>
 </html>
