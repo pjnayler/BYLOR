@@ -1,112 +1,55 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Mallard Court — Check In</title>
+  <link rel="stylesheet" href="style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      margin: 0;
-      background-color: #fff8f0;
-      color: #333;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
-    header {
-      background-color: #ff7f0f;
-      padding: 20px;
-      color: white;
-      text-align: center;
-    }
-    header img {
-      max-height: 60px;
-      margin-bottom: 10px;
-    }
-    main {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 40px 20px;
-    }
-    .card {
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      max-width: 400px;
-      width: 100%;
-      text-align: center;
-    }
-    input {
-      width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 16px;
-    }
-    button {
-      width: 100%;
-      padding: 12px;
-      background-color: #ff7f0f;
-      color: white;
-      font-weight: 600;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
-      margin-top: 10px;
-    }
-    button:hover { background-color: #e66b00; }
-    #status {
-      margin-top: 15px;
-      font-weight: 600;
-    }
-    footer {
-      text-align: center;
-      padding: 15px;
-      background: #fff8f0;
-      font-size: 14px;
-    }
-  </style>
 </head>
+
 <body>
-  <header>
-    <img src="logo.png" alt="Company Logo">
+  <header class="header">
+    <img src="logo.png" alt="Company Logo" class="logo" />
     <h1>Mallard Court Office Entry Log</h1>
   </header>
 
-  <main>
-    <div class="card">
-      <form id="checkinForm">
-        <input type="text" id="name" placeholder="Your Name" required>
-        <input type="text" id="sap" placeholder="SAP Number" required pattern="\d*" inputmode="numeric">
-        <button type="submit">Check In</button>
+  <main class="container">
+    <section class="card checkin-card">
+      <form id="checkinForm" autocomplete="off">
+        <label for="name">Your name</label>
+        <input id="name" name="name" type="text" placeholder="Enter your name" required autofocus />
+
+        <label for="sap">SAP Number</label>
+        <input id="sap" name="sap" type="number" placeholder="Enter your SAP Number" required pattern="\d*" inputmode="numeric" />
+
+        <button type="submit" id="submitBtn">Check In</button>
       </form>
-      <div id="status"></div>
-    </div>
+
+      <div id="status" class="status" aria-live="polite"></div>
+      <p class="help">Make sure location is enabled on your phone. Check-in is allowed only within the office radius.</p>
+    </section>
   </main>
 
-  <footer>
-    Admin → <a href="admin.html">Admin page (password protected)</a>
+  <footer class="footer">
+    <small>Admin → <a href="admin.html">Admin page (password protected)</a></small>
   </footer>
 
   <script>
     // ---------------- CONFIG ----------------
     const SUPABASE_URL = 'https://wxczoigytxeepkfhvifm.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4Y3pvaWd5dHhlZXBrZmh2aWZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2ODE2NzUsImV4cCI6MjA3NTI1NzY3NX0.PjHcgrZVAa5G56DseG5G9Qf1t3cE5wXOkat_GWhuQE0_KEY';
-    const OFFICE_LAT = 51.14688;
-    const OFFICE_LON = -2.99605;
-    const ALLOWED_RADIUS_METRES = 100;
-    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4Y3pvaWd5dHhlZXBrZmh2aWZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2ODE2NzUsImV4cCI6MjA3NTI1NzY3NX0.PjHcgrZVAa5G56DseG5G9Qf1t3cE5wXOkat_GWhuQE0';
+    const OFFICE_LAT = 51.14688;     // your office latitude
+    const OFFICE_LON = -2.99605;     // your office longitude
+    const ALLOWED_RADIUS_METRES = 500; // allowed check-in radius
     // ----------------------------------------
 
+    // init Supabase client
+    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // helper: geolocation → Promise
     function getPosition(options = {}) {
       return new Promise((resolve, reject) => {
         if (!navigator.geolocation) return reject(new Error('Geolocation not supported'));
@@ -114,30 +57,49 @@
       });
     }
 
+    // haversine distance (metres)
     function haversineDistanceMetres(lat1, lon1, lat2, lon2){
       const toRad = x => x * Math.PI / 180;
       const R = 6371000;
       const dLat = toRad(lat2 - lat1);
       const dLon = toRad(lon2 - lon1);
-      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const a = Math.sin(dLat / 2)**2 +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLon / 2)**2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       return R * c;
     }
 
+    // save entry to Supabase
     async function saveEntryToSupabase(name, sap, lat, lon, distance_m) {
       try {
         const { data, error } = await supabase
           .from('checkins')
-          .insert([{ name, sap, ts: new Date().toISOString(), lat, lon, distance_m }]);
-        if (error) throw error;
+          .insert([{
+            name,
+            sap: String(sap),
+            ts: new Date().toISOString(),
+            lat,
+            lon,
+            distance_m
+          }]);
+
+        if (error) {
+          console.error('❌ Supabase insert error object:', error);
+          alert(`Supabase error:\n${JSON.stringify(error, null, 2)}`);
+          throw error;
+        }
+
+        console.log('✅ Data saved:', data);
         return true;
+
       } catch (err) {
-        console.error('Supabase insert error', err);
-        alert('❌ Error saving entry. Check console.');
+        console.error('❌ Supabase exception:', err);
         return false;
       }
     }
 
+    // form submit handler
     document.getElementById('checkinForm').addEventListener('submit', async (ev) => {
       ev.preventDefault();
       const nameEl = document.getElementById('name');
@@ -149,18 +111,24 @@
 
       if (!name || !sap) {
         statusEl.textContent = '❌ Please fill in both Name and SAP number.';
+        statusEl.classList.add('show');
+        setTimeout(() => statusEl.classList.remove('show'), 2500);
         return;
       }
 
       if (isNaN(sap)) {
         statusEl.textContent = '❌ SAP Number must be numeric.';
+        statusEl.classList.add('show');
+        setTimeout(() => statusEl.classList.remove('show'), 2500);
         return;
       }
 
       statusEl.textContent = 'Getting location…';
+      statusEl.classList.add('show');
 
       const pos = await getPosition({ timeout: 10000 }).catch(err => {
-        statusEl.textContent = '❌ Location required. Please enable location.';
+        statusEl.textContent = '❌ Location required for check-in. Please enable location.';
+        setTimeout(() => statusEl.classList.remove('show'), 4000);
         return null;
       });
       if (!pos) return;
@@ -170,10 +138,12 @@
       const distance = Math.round(haversineDistanceMetres(lat, lon, OFFICE_LAT, OFFICE_LON));
 
       if (distance > ALLOWED_RADIUS_METRES) {
-        statusEl.textContent = `You are ${distance} m away — check-in allowed only within ${ALLOWED_RADIUS_METRES} m.`;
+        statusEl.textContent = `You are ${distance} m away — check-in only allowed within ${ALLOWED_RADIUS_METRES} m.`;
+        setTimeout(() => statusEl.classList.remove('show'), 4000);
         return;
       }
 
+      // save entry
       const ok = await saveEntryToSupabase(name, sap, lat, lon, distance);
       if (ok) {
         statusEl.textContent = '✅ Checked in — thank you!';
@@ -183,6 +153,8 @@
       } else {
         statusEl.textContent = '❌ Error saving entry — please try again.';
       }
+
+      setTimeout(() => statusEl.classList.remove('show'), 2500);
     });
   </script>
 </body>
