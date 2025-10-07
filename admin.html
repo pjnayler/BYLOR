@@ -31,12 +31,31 @@
     tr:nth-child(even) {
       background-color: #fff4e6;
     }
-    #status { margin-top: 10px; font-weight: 600; }
+    #status {
+      margin-top: 10px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+    }
+    /* Spinner */
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #ff7f0f;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
   <h1>Mallard Court — Check-in Admin</h1>
-  <div id="status">Loading...</div>
+  <div id="status"><div class="spinner"></div>Loading...</div>
   <table id="checkinsTable">
     <thead>
       <tr>
@@ -64,13 +83,15 @@
     // ---- SUPABASE CONFIG ----
     const SUPABASE_URL = 'https://wxczoigytxeepkfhvifm.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4Y3pvaWd5dHhlZXBrZmh2aWZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2ODE2NzUsImV4cCI6MjA3NTI1NzY3NX0.PjHcgrZVAa5G56DseG5G9Qf1t3cE5wXOkat_GWhuQE0';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const tbody = document.querySelector("#checkinsTable tbody");
     const statusEl = document.getElementById("status");
 
     async function loadCheckins() {
-      statusEl.textContent = "Loading check-ins…";
+      // Show spinner
+      statusEl.innerHTML = '<div class="spinner"></div>Loading check-ins…';
 
       const { data, error } = await supabase
         .from('checkins')
