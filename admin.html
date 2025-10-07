@@ -3,141 +3,136 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mallard Court — Admin Log</title>
+  <title>Mallard Court — Check In</title>
   <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <header class="header">
     <img src="logo.png" alt="Company Logo" class="logo" />
-    <h1>Admin — Mallard Court Entry Log</h1>
+    <h1>Mallard Court Office Entry Log</h1>
   </header>
 
   <main class="container">
-    <section class="card" id="loginCard">
-      <label for="adminPass">Enter admin password</label>
-      <input id="adminPass" type="password" placeholder="Password" />
-      <button id="loginBtn">Unlock Log</button>
-      <div id="loginMsg" class="status"></div>
-    </section>
+    <section class="card checkin-card">
+      <form id="checkinForm" autocomplete="off">
+        <label for="name">Your name</label>
+        <input id="name" name="name" type="text" placeholder="Enter your name" required autofocus />
 
-    <section class="card" id="adminPanel" style="display:none;">
-      <div class="row">
-        <button id="refreshBtn">Refresh</button>
-        <button id="exportBtn">Export CSV</button>
-        <button id="clearBtn" style="background:#FF6600;color:#fff;">Clear all (danger)</button>
-      </div>
-      <div id="entriesContainer" class="entriesContainer"></div>
+        <label for="sap">SAP Number</label>
+        <input id="sap" name="sap" type="text" placeholder="Enter your SAP Number" required pattern="\d*" inputmode="numeric" />
+
+        <button type="submit" id="submitBtn">Check In</button>
+      </form>
+
+      <div id="status" class="status" aria-live="polite"></div>
+      <p class="help">Make sure location is enabled on your phone. Check-in is allowed only within the office radius.</p>
     </section>
   </main>
 
   <footer class="footer">
-    <small><a href="index.html">Back to check-in page</a></small>
+    <small>Admin → <a href="admin.html">Admin page (password protected)</a></small>
   </footer>
 
   <script>
-    // ---------------- CONFIG - REPLACE THESE ----------------
+    // ---------------- CONFIGURATION ----------------
     const SUPABASE_URL = 'https://wxczoigytxeepkfhvifm.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4Y3pvaWd5dHhlZXBrZmh2aWZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2ODE2NzUsImV4cCI6MjA3NTI1NzY3NX0.PjHcgrZVAa5G56DseG5G9Qf1t3cE5wXOkat_GWhuQE0';
-    const ADMIN_PASSWORD = 'nfks2312';
-    // -------------------------------------------------------
+    const OFFICE_LAT = 51.14688;   // Replace with your real latitude
+    const OFFICE_LON = -2.99605;    // Replace with your real longitude
+    const ALLOWED_RADIUS_METRES = 300;
+    // ------------------------------------------------
 
-    const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Initialize Supabase client
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    function escapeHtml(s){ if(!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
-
-    async function fetchEntries() {
-      const { data, error } = await supabase
-        .from('checkins')
-        .select('*')
-        .order('ts', { ascending: false });
-      if (error) { console.error('fetch error', error); return []; }
-      return data || [];
-    }
-
-    function renderEntries(entries) {
-      const container = document.getElementById('entriesContainer');
-      if (!entries || !entries.length) {
-        container.innerHTML = '<p class="help">No entries yet.</p>';
-        return;
-      }
-      let html = '<table class="entries"><thead><tr><th>#</th><th>Name</th><th>SAP</th><th>Timestamp</th><th>Lat</th><th>Lon</th><th>Distance</th></tr></thead><tbody>';
-      entries.forEach((e,i) => {
-        const latView = (e.lat !== null && e.lat !== undefined) ? Number(e.lat).toFixed(6) : '';
-        const lonView = (e.lon !== null && e.lon !== undefined) ? Number(e.lon).toFixed(6) : '';
-        const distView = (typeof e.distance_m === 'number' || typeof e.distance_m === 'string') ? (e.distance_m + ' m') : '';
-        html += `<tr><td>${i+1}</td><td>${escapeHtml(e.name)}</td><td>${escapeHtml(e.sap)}</td><td>${new Date(e.ts).toLocaleString()}</td><td>${latView}</td><td>${lonView}</td><td>${distView}</td></tr>`;
+    // Get device position as Promise
+    function getPosition(options = {}) {
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) reject(new Error('Geolocation not supported'));
+        navigator.geolocation.getCurrentPosition(resolve, reject, options);
       });
-      html += '</tbody></table>';
-      container.innerHTML = html;
     }
 
-    async function exportCSV(entries) {
-      if (!entries || !entries.length) return;
-      const headers = ['id','name','sap','ts','lat','lon','distance_m'];
-      const rows = entries.map(e => [
-        e.id ?? '',
-        `"${String(e.name).replace(/"/g,'\"')}"`,
-        `"${String(e.sap).replace(/"/g,'\"')}"`,
-        e.ts ?? '',
-        e.lat ?? '',
-        e.lon ?? '',
-        e.distance_m ?? ''
-      ].join(','));
-      const csv = [headers.join(','), ...rows].join('\n');
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = 'checkins_export.csv'; a.click();
-      URL.revokeObjectURL(url);
+    // Haversine distance (metres)
+    function haversineDistanceMetres(lat1, lon1, lat2, lon2) {
+      const toRad = x => x * Math.PI / 180;
+      const R = 6371000;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLon / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
     }
 
-    document.getElementById('loginBtn').addEventListener('click', async () => {
-      const pass = document.getElementById('adminPass').value;
-      const loginMsg = document.getElementById('loginMsg');
-      if (pass !== ADMIN_PASSWORD) {
-        loginMsg.textContent = '❌ Incorrect password';
-        setTimeout(()=> loginMsg.textContent='', 2000);
+    async function saveEntryToSupabase(name, sap, lat, lon, distance_m) {
+      try {
+        const ts = new Date().toISOString();
+        const { error } = await supabase
+          .from('checkins')
+          .insert([{ name, sap: String(sap), ts, lat, lon, distance_m }]);
+        if (error) throw error;
+        return true;
+      } catch (err) {
+        console.error('Supabase insert error:', err);
+        return false;
+      }
+    }
+
+    const form = document.getElementById('checkinForm');
+    const statusEl = document.getElementById('status');
+
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+
+      const name = form.name.value.trim();
+      const sap = form.sap.value.trim();
+
+      if (!name || !sap) {
+        showStatus('❌ Please fill in both Name and SAP number.', true);
         return;
       }
-      // show panel
-      document.getElementById('loginCard').style.display = 'none';
-      document.getElementById('adminPanel').style.display = 'block';
+      if (isNaN(sap)) {
+        showStatus('❌ SAP Number must be numeric.', true);
+        return;
+      }
 
-      // initial fetch & render
-      const entries = await fetchEntries();
-      renderEntries(entries);
+      showStatus('📍 Getting location…');
+      const pos = await getPosition({ timeout: 10000 }).catch(() => null);
+      if (!pos) {
+        showStatus('⚠️ Location required for check-in. Please enable GPS and try again.', true);
+        return;
+      }
 
-      // subscribe to real-time changes
-      supabase.channel('public:checkins')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'checkins' }, async () => {
-          const updated = await fetchEntries();
-          renderEntries(updated);
-        })
-        .subscribe();
-    });
+      const { latitude: lat, longitude: lon } = pos.coords;
+      const distance = Math.round(haversineDistanceMetres(lat, lon, OFFICE_LAT, OFFICE_LON));
 
-    document.getElementById('refreshBtn').addEventListener('click', async () => {
-      const entries = await fetchEntries();
-      renderEntries(entries);
-    });
+      if (distance > ALLOWED_RADIUS_METRES) {
+        showStatus(`❌ You are ${distance} m away — check-in allowed only within ${ALLOWED_RADIUS_METRES} m.`, true);
+        return;
+      }
 
-    document.getElementById('exportBtn').addEventListener('click', async () => {
-      const entries = await fetchEntries();
-      exportCSV(entries);
-    });
-
-    document.getElementById('clearBtn').addEventListener('click', async () => {
-      if (!confirm('Permanently delete all check-ins?')) return;
-      // be careful: this removes everything - consider restricting
-      const { error } = await supabase.from('checkins').delete().neq('id', 0);
-      if (error) {
-        alert('Error clearing entries: ' + error.message);
+      const ok = await saveEntryToSupabase(name, sap, lat, lon, distance);
+      if (ok) {
+        showStatus('✅ Checked in — thank you!');
+        confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+        form.reset();
       } else {
-        alert('All entries deleted.');
-        renderEntries([]);
+        showStatus('❌ Error saving entry — please try again.', true);
       }
     });
+
+    function showStatus(msg, isError = false) {
+      statusEl.textContent = msg;
+      statusEl.classList.add('show');
+      statusEl.style.color = isError ? 'crimson' : 'green';
+      clearTimeout(statusEl._timeout);
+      statusEl._timeout = setTimeout(() => statusEl.classList.remove('show'), 4000);
+    }
   </script>
 </body>
 </html>
